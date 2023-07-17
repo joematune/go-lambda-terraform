@@ -6,13 +6,15 @@ provider "aws" {
       joe-learns = "terraform-modules"
     }
   }
-
 }
 
+# Random text for human-readable, random resource names
 resource "random_pet" "lambda_bucket_name" {
   prefix = "learn-terraform-modules"
   length = 4
 }
+
+# S3 Bucket creation - this example requires zero pre-existing resources
 
 resource "aws_s3_bucket" "lambda_bucket" {
   bucket = random_pet.lambda_bucket_name.id
@@ -33,6 +35,7 @@ resource "aws_s3_bucket_acl" "bucket_acl" {
   acl    = "private"
 }
 
+# Use Terraform's utility to archive our source code in preparation for S3
 data "archive_file" "lambda_hey_joe" {
   type = "zip"
 
@@ -41,6 +44,7 @@ data "archive_file" "lambda_hey_joe" {
   output_path = "${path.module}/hey-joe.zip"
 }
 
+# Create S3 object from archived source code. Lambda will use this object as the runtime source code
 resource "aws_s3_object" "lambda_hey_joe" {
   bucket = aws_s3_bucket.lambda_bucket.id
 
@@ -50,6 +54,8 @@ resource "aws_s3_object" "lambda_hey_joe" {
   etag = filemd5(data.archive_file.lambda_hey_joe.output_path)
 }
 
+# Lambda resource
+
 resource "aws_lambda_function" "hey_joe" {
   runtime = "go1.x"
   function_name = "HeyJoe"
@@ -58,7 +64,7 @@ resource "aws_lambda_function" "hey_joe" {
   s3_key    = aws_s3_object.lambda_hey_joe.key
 
   # https://docs.aws.amazon.com/lambda/latest/dg/golang-handler.html
-  # Maybe this references the binary? Or the function?
+  # Maybe this references the binary? Or the package?
   # See `handler` here: https://registry.terraform.io/modules/terraform-aws-modules/lambda/aws/latest?tab=inputs
   handler = "main"
   # In interpreted, we point to the file, then function: handler = "hey.handler"
@@ -72,6 +78,8 @@ resource "aws_cloudwatch_log_group" "hey_joe" {
 
   retention_in_days = 30
 }
+
+# IAM Role & Policy
 
 resource "aws_iam_role" "lambda_exec" {
   name = "serverless_lambda"
@@ -95,11 +103,15 @@ resource "aws_iam_role_policy_attachment" "lambda_policy" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
+# API Gateway resources
+
+# Create HTTP parent resource
 resource "aws_apigatewayv2_api" "lambda" {
   name          = "serverless_lambda_gw"
   protocol_type = "HTTP"
 }
 
+# Create API Gateway stage, serving as the default value. Multiple stages can be implemented
 resource "aws_apigatewayv2_stage" "lambda" {
   api_id = aws_apigatewayv2_api.lambda.id
 
@@ -125,16 +137,18 @@ resource "aws_apigatewayv2_stage" "lambda" {
   }
 }
 
+# Create the connection, or 'bridge' between API Gateway and Lambda
 resource "aws_apigatewayv2_integration" "hey_joe" {
   api_id = aws_apigatewayv2_api.lambda.id
 
   integration_uri    = aws_lambda_function.hey_joe.invoke_arn
   integration_type   = "AWS_PROXY"
-  # This does not seem to affect the aws_apigatewayv2_route resource. The route can be GET and works perfectly
+  # ?: This does not seem to affect the aws_apigatewayv2_route resource. The route can be GET and works perfectly
   # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-apigatewayv2-integration.html#cfn-apigatewayv2-integration-integrationmethod
   integration_method = "POST"
 }
 
+# Create route, i.e. url path
 resource "aws_apigatewayv2_route" "hey_joe" {
   api_id = aws_apigatewayv2_api.lambda.id
 
@@ -142,12 +156,14 @@ resource "aws_apigatewayv2_route" "hey_joe" {
   target    = "integrations/${aws_apigatewayv2_integration.hey_joe.id}"
 }
 
+# Create API Gateway log group
 resource "aws_cloudwatch_log_group" "api_gw" {
   name = "/aws/api_gw/${aws_apigatewayv2_api.lambda.name}"
 
   retention_in_days = 30
 }
 
+# Allow API Gateway to invoke Lambda
 resource "aws_lambda_permission" "api_gw" {
   statement_id  = "AllowExecutionFromAPIGateway"
   action        = "lambda:InvokeFunction"
