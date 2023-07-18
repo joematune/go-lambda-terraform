@@ -35,140 +35,77 @@ resource "aws_s3_bucket_acl" "bucket_acl" {
   acl    = "private"
 }
 
-# Use Terraform's utility to archive our source code in preparation for S3
-data "archive_file" "lambda_hey_joe" {
-  type = "zip"
+module "lambda_function" {
+  # The location of this module - will resolve to TF repository
+  source  = "terraform-aws-modules/lambda/aws"
+  version = "~> 3.0"
 
-  # Our build binary output
-  source_file  = "${path.module}/main"
-  output_path = "${path.module}/hey-joe.zip"
-}
-
-# Create S3 object from archived source code. Lambda will use this object as the runtime source code
-resource "aws_s3_object" "lambda_hey_joe" {
-  bucket = aws_s3_bucket.lambda_bucket.id
-
-  key    = "hey-joe.zip"
-  source = data.archive_file.lambda_hey_joe.output_path
-
-  etag = filemd5(data.archive_file.lambda_hey_joe.output_path)
-}
-
-# Lambda resource
-
-resource "aws_lambda_function" "hey_joe" {
-  runtime = "go1.x"
   function_name = "HeyJoe"
+  description   = "My awesome lambda function"
+  handler       = "main"
+  runtime       = "go1.x"
 
+  source_path = "${path.module}/main"
+
+  store_on_s3 = true
   s3_bucket = aws_s3_bucket.lambda_bucket.id
-  s3_key    = aws_s3_object.lambda_hey_joe.key
 
-  # https://docs.aws.amazon.com/lambda/latest/dg/golang-handler.html
-  # Maybe this references the binary? Or the package?
-  # See `handler` here: https://registry.terraform.io/modules/terraform-aws-modules/lambda/aws/latest?tab=inputs
-  handler = "main"
-  # In interpreted, we point to the file, then function: handler = "hey.handler"
-
-  source_code_hash = data.archive_file.lambda_hey_joe.output_base64sha256
-  role = aws_iam_role.lambda_exec.arn
-}
-
-resource "aws_cloudwatch_log_group" "hey_joe" {
-  name = "/aws/lambda/${aws_lambda_function.hey_joe.function_name}"
-
-  retention_in_days = 30
-}
-
-# IAM Role & Policy
-
-resource "aws_iam_role" "lambda_exec" {
-  name = "serverless_lambda"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Action = "sts:AssumeRole"
-      Effect = "Allow"
-      Sid    = ""
-      Principal = {
-        Service = "lambda.amazonaws.com"
-      }
-    }]
-  })
-}
-
-resource "aws_iam_role_policy_attachment" "lambda_policy" {
-  role       = aws_iam_role.lambda_exec.name
-  # As name implies, basic execution allowances provided as a convenience
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
-}
-
-# API Gateway resources
-
-# Create HTTP parent resource
-resource "aws_apigatewayv2_api" "lambda" {
-  name          = "serverless_lambda_gw"
-  protocol_type = "HTTP"
-}
-
-# Create API Gateway stage, serving as the default value. Multiple stages can be implemented
-resource "aws_apigatewayv2_stage" "lambda" {
-  api_id = aws_apigatewayv2_api.lambda.id
-
-  name        = "serverless_lambda_stage"
-  auto_deploy = true
-
-  access_log_settings {
-    destination_arn = aws_cloudwatch_log_group.api_gw.arn
-
-    format = jsonencode({
-      requestId               = "$context.requestId"
-      sourceIp                = "$context.identity.sourceIp"
-      requestTime             = "$context.requestTime"
-      protocol                = "$context.protocol"
-      httpMethod              = "$context.httpMethod"
-      resourcePath            = "$context.resourcePath"
-      routeKey                = "$context.routeKey"
-      status                  = "$context.status"
-      responseLength          = "$context.responseLength"
-      integrationErrorMessage = "$context.integrationErrorMessage"
-      }
-    )
+  # Added to avoid error
+  # https://github.com/terraform-aws-modules/terraform-aws-lambda/issues/36#issuecomment-650217274
+  publish = true
+  allowed_triggers = {
+    AllowExecutionFromAPIGateway = {
+      service    = "apigateway"
+      source_arn = "${module.api_gateway.apigatewayv2_api_execution_arn}/*/*"
+    }
   }
 }
 
-# Create the connection, or 'bridge' between API Gateway and Lambda
-resource "aws_apigatewayv2_integration" "hey_joe" {
-  api_id = aws_apigatewayv2_api.lambda.id
+module "api_gateway" {
+  source = "terraform-aws-modules/apigateway-v2/aws"
 
-  integration_uri    = aws_lambda_function.hey_joe.invoke_arn
-  integration_type   = "AWS_PROXY"
-  # ?: This does not seem to affect the aws_apigatewayv2_route resource. The route can be GET and works perfectly
-  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-apigatewayv2-integration.html#cfn-apigatewayv2-integration-integrationmethod
-  integration_method = "POST"
-}
+  name          = "serverless_lambda_gw"
+  protocol_type = "HTTP"
 
-# Create route, i.e. url path
-resource "aws_apigatewayv2_route" "hey_joe" {
-  api_id = aws_apigatewayv2_api.lambda.id
+  cors_configuration = {
+    allow_headers = ["content-type", "x-amz-date", "authorization", "x-api-key", "x-amz-security-token", "x-amz-user-agent"]
+    allow_methods = ["*"]
+    allow_origins = ["*"]
+  }
 
-  route_key = "POST /hey"
-  target    = "integrations/${aws_apigatewayv2_integration.hey_joe.id}"
+  # No custom domain, please
+  create_api_domain_name = false
+
+  # Access logs
+  default_stage_access_log_destination_arn = aws_cloudwatch_log_group.api_gw.arn
+
+  default_stage_access_log_format = jsonencode({
+    requestId               = "$context.requestId"
+    sourceIp                = "$context.identity.sourceIp"
+    requestTime             = "$context.requestTime"
+    protocol                = "$context.protocol"
+    httpMethod              = "$context.httpMethod"
+    resourcePath            = "$context.resourcePath"
+    routeKey                = "$context.routeKey"
+    status                  = "$context.status"
+    responseLength          = "$context.responseLength"
+    integrationErrorMessage = "$context.integrationErrorMessage"
+    }
+  )
+
+  # Routes and integrations
+  integrations = {
+    "POST /hey" = {
+      lambda_arn             = module.lambda_function.lambda_function_arn
+      payload_format_version = "2.0"
+      timeout_milliseconds   = 12000
+    }
+  }
 }
 
 # Create API Gateway log group
 resource "aws_cloudwatch_log_group" "api_gw" {
-  name = "/aws/api_gw/${aws_apigatewayv2_api.lambda.name}"
+  name = "/aws/api_gw/${module.lambda_function.lambda_function_name}"
 
   retention_in_days = 30
-}
-
-# Allow API Gateway to invoke Lambda
-resource "aws_lambda_permission" "api_gw" {
-  statement_id  = "AllowExecutionFromAPIGateway"
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.hey_joe.function_name
-  principal     = "apigateway.amazonaws.com"
-
-  source_arn = "${aws_apigatewayv2_api.lambda.execution_arn}/*/*"
 }
