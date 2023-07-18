@@ -3,7 +3,7 @@ provider "aws" {
 
   default_tags {
     tags = {
-      joe-learns = "terraform-modules"
+      joe-does = "terraform-modules"
     }
   }
 }
