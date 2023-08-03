@@ -8,6 +8,27 @@ provider "aws" {
   }
 }
 
+# Random text for human-readable, random resource names
+resource "random_pet" "lambda_bucket_name" {
+  prefix = "learn-terraform-modules"
+  length = 3
+}
+
+module "s3_bucket" {
+  source = "terraform-aws-modules/s3-bucket/aws"
+
+  bucket = random_pet.lambda_bucket_name.id
+  acl    = "private"
+
+  control_object_ownership = true
+  object_ownership         = "BucketOwnerPreferred"
+
+  # TODO: What is the default value?
+  versioning = {
+    enabled = true
+  }
+}
+
 module "lambda_function" {
   # The location of this module - will resolve to TF repository
   source  = "terraform-aws-modules/lambda/aws"
@@ -20,7 +41,7 @@ module "lambda_function" {
   handler       = "main"
 
   store_on_s3 = true
-  s3_bucket = aws_s3_bucket.lambda_bucket.id
+  s3_bucket = module.s3_bucket.s3_bucket_id
 
   allowed_triggers = {
     AllowExecutionFromAPIGateway = {
@@ -32,32 +53,6 @@ module "lambda_function" {
   # Added to avoid error - Whether to publish creation/change as new Lambda Function Version.
   # https://github.com/terraform-aws-modules/terraform-aws-lambda/issues/36#issuecomment-650217274
   publish = true
-}
-
-# Random text for human-readable, random resource names
-resource "random_pet" "lambda_bucket_name" {
-  prefix = "learn-terraform-modules"
-  length = 3
-}
-
-# S3 Bucket creation - this example requires zero pre-existing resources
-resource "aws_s3_bucket" "lambda_bucket" {
-  bucket = random_pet.lambda_bucket_name.id
-}
-
-resource "aws_s3_bucket_ownership_controls" "lambda_bucket" {
-  bucket = aws_s3_bucket.lambda_bucket.id
-  # The default rule changed for aws and terraform doesn't default correctly?
-  rule {
-    object_ownership = "BucketOwnerPreferred"
-  }
-}
-
-resource "aws_s3_bucket_acl" "bucket_acl" {
-  depends_on = [aws_s3_bucket_ownership_controls.lambda_bucket]
-
-  bucket = aws_s3_bucket.lambda_bucket.id
-  acl    = "private"
 }
 
 module "api_gateway" {
