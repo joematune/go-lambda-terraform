@@ -1,13 +1,20 @@
 instructions:
-		cat README.md | grep "1\."
+		cat README.md | grep "[0-9]\."
+
+init:
+		$(MAKE) -C infrastructure init
 
 build:
-		GOOS=linux go build hey-joe/main.go
+		GOOS=linux go build -o bootstrap app/main.go
 
 deploy:
-		make build && terraform apply -auto-approve
+		make build && $(MAKE) -C infrastructure apply
 
 post:
-		# shell equivalent:
-		# curl -i "$(terraform output -raw base_url)/hey" -X POST -d '{"name":"joe"}' -H "Content-Type: application/json"
-		BASE_URL="$(shell terraform output -raw base_url)"; curl -i "$$BASE_URL/hey" -X POST -d '{"name":"joe"}' -H "Content-Type: application/json"
+		$(MAKE) -C infrastructure post
+
+tail:
+		$(MAKE) -C infrastructure tail
+
+destroy:
+		$(MAKE) -C infrastructure destroy

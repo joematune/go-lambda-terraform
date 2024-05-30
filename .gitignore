@@ -18,14 +18,14 @@ crash.log
 .terraformrc
 terraform.rc
 
-# Ignore lock files
-.terraform.lock*
-
 # Ignore archived anything, e.g. hey-joe.zip
 *.zip
 
-# Ignore Go build binary
-main
+# Don't check in Go build binary
+bootstrap
 
-# A matter of convenience - ignore `ignore` files
-ignore-*
+# Logs from CloudWatch
+logs/**
+
+ignore/**
+builds/**

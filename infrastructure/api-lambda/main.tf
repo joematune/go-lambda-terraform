@@ -1,16 +1,9 @@
-provider "aws" {
-  region = var.aws_region
+# ORIGINAL MODULE: https://github.com/terraform-aws-modules/terraform-aws-lambda/blob/master/main.tf
 
-  default_tags {
-    tags = {
-      joe-does = "terraform-modules"
-    }
-  }
-}
+# THE MODULE DOESN'T CARE ABOUT THE PROVIDER? IT JUST EXPORTS HELPERS
 
 # Random text for human-readable, random resource names
 resource "random_pet" "lambda_bucket_name" {
-  prefix = "learn-terraform-modules"
   length = 3
 }
 
@@ -29,15 +22,15 @@ module "s3_bucket" {
   }
 }
 
-module "lambda_function" {
+module "lambda" {
   # The location of this module - will resolve to TF repository
   source  = "terraform-aws-modules/lambda/aws"
   version = "~> 3.0"
 
-  function_name = "HeyJoe"
+  function_name = var.function_name
   description   = "My awesome lambda function"
-  runtime       = "go1.x"
-  source_path = "${path.module}/main"
+  runtime       = "provided.al2023"
+  source_path = var.source_path
   handler       = "main"
 
   store_on_s3 = true
@@ -64,7 +57,7 @@ module "api_gateway" {
   # Routes and integrations
   integrations = {
     "POST /hey" = {
-      lambda_arn             = module.lambda_function.lambda_function_arn
+      lambda_arn             = module.lambda.lambda_function_arn
       payload_format_version = "2.0"
       timeout_milliseconds   = 12000
     }
@@ -92,7 +85,7 @@ module "api_gateway" {
 
 # Create API Gateway log group
 resource "aws_cloudwatch_log_group" "api_gw" {
-  name = "/aws/api_gw/${module.lambda_function.lambda_function_name}"
+  name = "/aws/api_gw/${module.lambda.lambda_function_name}"
 
   retention_in_days = 30
 }
