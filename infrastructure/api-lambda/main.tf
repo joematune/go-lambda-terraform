@@ -1,31 +1,11 @@
-# ORIGINAL MODULE: https://github.com/terraform-aws-modules/terraform-aws-lambda/blob/master/main.tf
+# Original module: https://github.com/terraform-aws-modules/terraform-aws-lambda/blob/master/main.tf
 
-# THE MODULE DOESN'T CARE ABOUT THE PROVIDER? IT JUST EXPORTS HELPERS
-
-# Random text for human-readable, random resource names
-resource "random_pet" "lambda_bucket_name" {
-  length = 3
-}
-
-module "s3_bucket" {
-  source = "terraform-aws-modules/s3-bucket/aws"
-
-  bucket = random_pet.lambda_bucket_name.id
-  acl    = "private"
-
-  control_object_ownership = true
-  object_ownership         = "BucketOwnerPreferred"
-
-  # TODO: What is the default value?
-  versioning = {
-    enabled = true
-  }
-}
+# The module doesn't care about the provider, it just exports helpers
 
 module "lambda" {
   # The location of this module - will resolve to TF repository
   source  = "terraform-aws-modules/lambda/aws"
-  version = "~> 3.0"
+  version = "~> 7.4"
 
   function_name = var.function_name
   description   = "My awesome lambda function"
@@ -34,7 +14,9 @@ module "lambda" {
   handler       = "main"
 
   store_on_s3 = true
-  s3_bucket = module.s3_bucket.s3_bucket_id
+  s3_bucket = var.s3_bucket_id
+
+  attach_cloudwatch_logs_policy = true
 
   allowed_triggers = {
     AllowExecutionFromAPIGateway = {
@@ -56,7 +38,7 @@ module "api_gateway" {
 
   # Routes and integrations
   integrations = {
-    "POST /hey" = {
+    "ANY /{proxy+}" = {
       lambda_arn             = module.lambda.lambda_function_arn
       payload_format_version = "2.0"
       timeout_milliseconds   = 12000
@@ -67,7 +49,8 @@ module "api_gateway" {
   create_api_domain_name = false
 
   # CloudWatch Logs log group to receive access logs.
-  default_stage_access_log_destination_arn = aws_cloudwatch_log_group.api_gw.arn
+  default_stage_access_log_destination_arn = module.lambda.lambda_cloudwatch_log_group_arn
+  # default_stage_access_log_destination_arn = aws_cloudwatch_log_group.api_gw.arn
   default_stage_access_log_format = jsonencode({
     requestId               = "$context.requestId"
     sourceIp                = "$context.identity.sourceIp"
@@ -84,8 +67,8 @@ module "api_gateway" {
 }
 
 # Create API Gateway log group
-resource "aws_cloudwatch_log_group" "api_gw" {
-  name = "/aws/api_gw/${module.lambda.lambda_function_name}"
+# resource "aws_cloudwatch_log_group" "api_gw" {
+#   name = "/aws/api_gw/${module.lambda.lambda_function_name}"
 
-  retention_in_days = 30
-}
+#   retention_in_days = 30
+# }

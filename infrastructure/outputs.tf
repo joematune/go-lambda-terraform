@@ -3,7 +3,7 @@
 output "lambda_bucket_name" {
   description = "Name of the S3 bucket used to store function code."
 
-  value = module.api_lambda.lambda_bucket_name
+  value = module.lambda_s3_bucket.s3_bucket_id
 }
 
 output "function_name" {

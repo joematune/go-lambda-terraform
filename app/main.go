@@ -15,6 +15,7 @@ type Hey struct {
 
 func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	fmt.Printf("Processing request body: %s\n", request.Body)
+	fmt.Println(request.PathParameters["proxy"])
 
 	var hey Hey
 	err := json.Unmarshal([]byte(request.Body), &hey)

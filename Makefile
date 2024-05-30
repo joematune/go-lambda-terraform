@@ -1,6 +1,9 @@
 instructions:
 		cat README.md | grep "[0-9]\."
 
+plan:
+		$(MAKE) -C infrastructure plan
+
 init:
 		$(MAKE) -C infrastructure init
 

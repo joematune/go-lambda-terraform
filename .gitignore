@@ -1,5 +1,5 @@
 # Local .terraform directories
-**/.terraform/*
+**/.terraform
 
 # .tfstate files
 *.tfstate
@@ -28,4 +28,4 @@ bootstrap
 logs/**
 
 ignore/**
-builds/**
+*/builds/**

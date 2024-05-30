@@ -1,15 +1,18 @@
+plan:
+		terraform plan
+
+init:
+		terraform init
+
 apply:
 		terraform apply -auto-approve
 
 destroy:
 		terraform destroy -auto-approve
 
-init:
-		terraform init
-
 post:
-		# shell equivalent: curl -i "$(terraform output -raw base_url)/hey" -X POST -d '{"name":"joe"}' -H "Content-Type: application/json"
-		BASE_URL="$(shell terraform output -raw base_url)"; curl -i "$$BASE_URL/hey" -X POST -d '{"name":"joe"}' -H "Content-Type: application/json"
+		# shell equivalent: curl -i "$(terraform output -raw base_url)/hey/joe" -X POST -d '{"name":"joe"}' -H "Content-Type: application/json"
+		BASE_URL="$(shell terraform output -raw base_url)"; curl -i "$$BASE_URL/hey/joe" -X POST -d '{"name":"joe"}' -H "Content-Type: application/json"
 
 tail:
 		# shell equivalent: aws logs tail "$(terraform output -raw log_group_name)" --region us-east-1 --follow

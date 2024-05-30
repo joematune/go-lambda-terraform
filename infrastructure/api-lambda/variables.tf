@@ -5,11 +5,15 @@
 variable "function_name" {
   description = "A unique name for your Lambda Function"
   type        = string
-  default     = "MyLambda"
 }
 
 variable "source_path" {
   description = "The absolute path to a local file or directory containing your Lambda source code"
   type        = any # string | list(string | map(any))
   default     = null
+}
+
+variable "s3_bucket_id" {
+  description = "Id of the S3 bucket used to store function code."
+  type = string
 }
