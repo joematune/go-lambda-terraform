@@ -12,12 +12,6 @@ output "base_url" {
   value = module.api_gateway.default_apigatewayv2_stage_invoke_url
 }
 
-# output "log_group_name" {
-#   description = "Log group name for inspection / tailing."
-
-#   value = aws_cloudwatch_log_group.api_gw.name
-# }
-
 output "log_group_name" {
   description = "Log group name for inspection / tailing."
   value = module.lambda.lambda_cloudwatch_log_group_name
