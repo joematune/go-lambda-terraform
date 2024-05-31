@@ -65,10 +65,3 @@ module "api_gateway" {
     }
   )
 }
-
-# Create API Gateway log group
-# resource "aws_cloudwatch_log_group" "api_gw" {
-#   name = "/aws/api_gw/${module.lambda.lambda_function_name}"
-
-#   retention_in_days = 30
-# }
