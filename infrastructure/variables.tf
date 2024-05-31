@@ -2,8 +2,8 @@
 
 variable "service" {
   description = "The name of this application"
-  type = string
-  default = "hey-joe"
+  type        = string
+  default     = "hey-joe"
 }
 
 variable "aws_region" {

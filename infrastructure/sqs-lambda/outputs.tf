@@ -14,5 +14,5 @@ output "queue_url" {
 
 output "log_group_name" {
   description = "Log group name for inspection / tailing."
-  value = module.lambda.lambda_cloudwatch_log_group_name
+  value       = module.lambda.lambda_cloudwatch_log_group_name
 }

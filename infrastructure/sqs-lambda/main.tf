@@ -10,11 +10,11 @@ module "lambda" {
   function_name = var.function_name
   description   = "My awesome SQS lambda function"
   runtime       = "provided.al2023"
-  source_path = var.source_path
+  source_path   = var.source_path
   handler       = "main"
 
   store_on_s3 = true
-  s3_bucket = var.s3_bucket_id
+  s3_bucket   = var.s3_bucket_id
 
   attach_cloudwatch_logs_policy = true
 
@@ -63,7 +63,7 @@ module "lambda" {
 
 # SQS
 resource "aws_sqs_queue" "this" {
-  name = "${var.queue_name}"
+  name = var.queue_name
 }
 
 resource "aws_sqs_queue" "dlq" {

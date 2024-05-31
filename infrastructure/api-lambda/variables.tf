@@ -15,5 +15,5 @@ variable "source_path" {
 
 variable "s3_bucket_id" {
   description = "Id of the S3 bucket used to store function code."
-  type = string
+  type        = string
 }

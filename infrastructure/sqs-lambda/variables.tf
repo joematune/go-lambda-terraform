@@ -14,10 +14,10 @@ variable "source_path" {
 
 variable "s3_bucket_id" {
   description = "Id of the S3 bucket used to store function code."
-  type = string
+  type        = string
 }
 
 variable "queue_name" {
   description = "The name of the SQS queue, which the lambda will consume"
-  type = string
+  type        = string
 }
