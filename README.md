@@ -9,6 +9,8 @@
 
 1. `make init` - Install terraform dependencies
 2. `make deploy` - Build Go binary for lambda and create cloud resources
-3. In another terminal, `make tail` - tail CloudWatch logs
+3. In another terminal, `make tail_api` - tail CloudWatch logs
 4. `make post` - Post to API Gateway endpoint
-5. `make destroy` - Clean up ~ remove all resources
+5. In another terminal, `make tail_sqs` - tail CloudWatch logs
+6. `make send` - Post to API Gateway endpoint
+7. `make destroy` - Clean up ~ remove all resources
