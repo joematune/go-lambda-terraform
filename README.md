@@ -1,4 +1,4 @@
-# Terraform Modules with Lambda & API Gateway in Go
+# Terraform Modules with Lambda & API Gateway & SQS in Go
 
 ### Requirements
 
