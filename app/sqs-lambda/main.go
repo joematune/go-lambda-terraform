@@ -12,7 +12,7 @@ import (
 )
 
 func HandleRequest(ctx context.Context, event events.SQSEvent) (events.SQSBatchItemFailure, error) {
-	r := event.Records[0];
+	r := event.Records[0]
 	fmt.Printf("Processing request body: %s\n", r.Body)
 
 	var hey hey.Message
