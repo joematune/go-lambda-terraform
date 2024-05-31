@@ -8,7 +8,8 @@ init:
 		$(MAKE) -C infrastructure init
 
 build:
-		GOOS=linux go build -o bootstrap app/main.go
+		GOOS=linux go build -o builds/api-lambda/bootstrap app/api-lambda/main.go && \
+		GOOS=linux go build -o builds/sqs-lambda/bootstrap app/sqs-lambda/main.go
 
 deploy:
 		make build && $(MAKE) -C infrastructure apply
@@ -16,8 +17,14 @@ deploy:
 post:
 		$(MAKE) -C infrastructure post
 
-tail:
-		$(MAKE) -C infrastructure tail
+tail_api:
+		$(MAKE) -C infrastructure tail_api
+
+send:
+		$(MAKE) -C infrastructure send
+
+tail_sqs:
+		$(MAKE) -C infrastructure tail_sqs
 
 destroy:
 		$(MAKE) -C infrastructure destroy

@@ -6,7 +6,7 @@ output "lambda_bucket_name" {
   value = module.lambda_s3_bucket.s3_bucket_id
 }
 
-output "function_name" {
+output "api_function_name" {
   description = "Name of the Lambda function."
 
   value = module.api_lambda.function_name
@@ -18,8 +18,20 @@ output "base_url" {
   value = module.api_lambda.base_url
 }
 
-output "log_group_name" {
+output "api_log_group_name" {
   description = "Log group name for inspection / tailing."
 
   value = module.api_lambda.log_group_name
+}
+
+output "queue_url" {
+  description = "Queue URL that Lambda consumes."
+
+  value = module.sqs_lambda.queue_url
+}
+
+output "sqs_log_group_name" {
+  description = "Log group name for inspection / tailing."
+
+  value = module.sqs_lambda.log_group_name
 }

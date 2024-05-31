@@ -5,19 +5,17 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"learn-go-lambda-terraform/app/hey"
+
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 )
-
-type Hey struct {
-	Name string `json:"name"`
-}
 
 func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	fmt.Printf("Processing request body: %s\n", request.Body)
 	fmt.Println(request.PathParameters["proxy"])
 
-	var hey Hey
+	var hey hey.Message
 	err := json.Unmarshal([]byte(request.Body), &hey)
 	if err != nil {
 		fmt.Println("Error:", err)

@@ -14,9 +14,17 @@ post:
 		# shell equivalent: curl -i "$(terraform output -raw base_url)/hey/joe" -X POST -d '{"name":"joe"}' -H "Content-Type: application/json"
 		BASE_URL="$(shell terraform output -raw base_url)"; curl -i "$$BASE_URL/hey/joe" -X POST -d '{"name":"joe"}' -H "Content-Type: application/json"
 
-tail:
-		# shell equivalent: aws logs tail "$(terraform output -raw log_group_name)" --region us-east-1 --follow
-		LOG_GROUP="$(shell terraform output -raw log_group_name)"; aws logs tail "$$LOG_GROUP" --region us-east-1 --follow
+tail_api:
+		# shell equivalent: aws logs tail "$(terraform output -raw api_log_group_name)" --region us-east-1 --follow
+		LOG_GROUP="$(shell terraform output -raw api_log_group_name)"; aws logs tail "$$LOG_GROUP" --region us-east-1 --follow
+
+send:
+		# shell equivalent: curl -i "$(terraform output -raw queue_url)/hey/joe" aws sqs send-message --queue-url QUEUE_URL --message-body '{"name":"joe"}' --region us-east-1
+		QUEUE_URL="$(shell terraform output -raw queue_url)"; aws sqs send-message --queue-url "$$QUEUE_URL" --message-body '{"name":"joe"}' --region us-east-1
+
+tail_sqs:
+		# shell equivalent: aws logs tail "$(terraform output -raw sqs_log_group_name)" --region us-east-1 --follow
+		LOG_GROUP="$(shell terraform output -raw sqs_log_group_name)"; aws logs tail "$$LOG_GROUP" --region us-east-1 --follow
 
 #                                              ..77!:.                                                
 #                                           .~?PG##BGP?7.                                             
